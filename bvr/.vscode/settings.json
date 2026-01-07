@@ -1,0 +1,20 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.espIdfPath": "/Users/tom/Code/Embedded/esp/esp-idf/v5.5.2",
+  "idf.pythonInstallPath": "/opt/homebrew/anaconda3/bin/python3",
+  "idf.openOcdConfigs": [
+    "board/esp32c6-builtin.cfg"
+  ],
+  "idf.port": "/dev/tty.usbmodem1101",
+  "idf.toolsPath": "/Users/tom/Code/Embedded/esp/esp-idf/v5.5.2/tools",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32c6"
+  },
+  "clangd.path": "/Users/tom/Code/Embedded/esp/esp-idf/v5.5.2/tools/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=/Users/tom/Code/Embedded/bvr2/build"
+  ],
+  "idf.flashType": "UART"
+}

@@ -1,0 +1,18 @@
+[Unit]
+Description=MediaMTX Camera Streaming Service
+After=network.target
+
+[Service]
+# Adjust User and WorkingDirectory to your specific setup
+User=tom
+Group=tom
+WorkingDirectory=/opt/mediamtx
+ExecStart=/opt/mediamtx/mediamtx
+Restart=always
+RestartSec=5
+# Ensure the Pi has time to initialise hardware on boot
+ExecStartPre=/bin/sleep 5
+
+[Install]
+WantedBy=multi-user.target
+
