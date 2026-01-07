@@ -76,19 +76,9 @@ sdkconfig.old
 **/portainer/portainer.pub
 
 # Nginx Proxy Manager
-**/nginx/data/
-**/nginx/letsencrypt/
 **/nginx/*.db
 
 # Pi-hole
-**/pihole/etc/
-**/pihole/etc-pihole/
-**/pihole/etc-dnsmasq.d/
-**/pihole/dnsmasq/
-**/pihole/*.log
-
-# Promtail
-**/promtail/positions.yaml
 
 # General container logs
 **/logs/
@@ -116,6 +106,7 @@ credentials.json
 *.sqlite3
 *.db-shm
 *.db-wal
+*.db.1
 
 # ===========================
 # OS & IDE
