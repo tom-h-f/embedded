@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "minor_version": 5,
+  "key": "core.config_entries",
+  "data": {
+    "entries": [
+      {"created_at":"2026-01-06T16:51:08.451973+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"sun","entry_id":"01KEA3GBH3X4MF44AYHF2WTTGE","minor_version":1,"modified_at":"2026-01-06T16:51:08.451984+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"import","subentries":[],"title":"Sun","unique_id":null,"version":1},
+      {"created_at":"2026-01-06T16:51:09.635720+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"bluetooth","entry_id":"01KEA3GCP31SQ3VXAMJP5EDVM6","minor_version":1,"modified_at":"2026-01-06T16:51:09.635732+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"integration_discovery","subentries":[],"title":"Raspberry Pi Trading Ltd None (D8:3A:DD:30:50:70)","unique_id":"D8:3A:DD:30:50:70","version":1},
+      {"created_at":"2026-01-06T16:51:09.649381+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"go2rtc","entry_id":"01KEA3GCPH8R08GR7C9459P9QY","minor_version":1,"modified_at":"2026-01-06T16:51:09.649391+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"system","subentries":[],"title":"go2rtc","unique_id":null,"version":1},
+      {"created_at":"2026-01-06T16:51:09.661642+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"backup","entry_id":"01KEA3GCPXMSWRHVNWV03BXTFV","minor_version":1,"modified_at":"2026-01-06T16:51:09.661652+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"system","subentries":[],"title":"Backup","unique_id":null,"version":1},
+      {"created_at":"2026-01-06T16:51:15.822178+00:00","data":{"ignore_cec":[],"known_hosts":[],"user_id":"c8ff401ed20242c099215b76ba3f49cd","uuid":[]},"disabled_by":null,"discovery_keys":{"zeroconf":[{"domain":"zeroconf","key":["_googlecast._tcp.local.","50UA73006LA.CEKJKH-3bef718034154118ada6f97d7cc2aa75._googlecast._tcp.local."],"version":1}]},"domain":"cast","entry_id":"01KEA3GJQE8CDMTXV3JYB1RBB0","minor_version":1,"modified_at":"2026-01-06T16:51:15.825022+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"zeroconf","subentries":[],"title":"Google Cast","unique_id":"cast","version":1}
+    ]
+  }
+}

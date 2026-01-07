@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'dns-sd-nodes'
+    dns_sd_configs:
+      - names:
+          - '_metrics._tcp.meerkat-decibel.ts.net'
+        type: 'SRV'
+        refresh_interval: '30s'
+  # 2. Automated Docker Discovery
+  # This finds any container on the Pi
+  # with the label: prometheus_scrape=true
+  - job_name: 'docker-discovery'
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+    relabel_configs:
+      - source_labels: [__meta_docker_container_label_prometheus_scrape]
+        regex: 'true'
+        action: keep
+      # Map the container name to the 'instance' label for nice graphs
+      - source_labels: [__meta_docker_container_name]
+        target_label: instance
