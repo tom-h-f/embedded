@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# IoT CLI Wrapper - uses uv to run the CLI with the correct dependencies
+
+# Resolve symlinks to get the actual script directory
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+cd "$SCRIPT_DIR" && uv run "$SCRIPT_DIR/iot_cli.py" "$@"
