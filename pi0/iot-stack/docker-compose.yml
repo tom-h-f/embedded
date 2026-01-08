@@ -11,7 +11,7 @@ services:
     - /sys:/sys:ro
     - /var/lib/docker/:/var/lib/docker:ro
     - /dev/disk/:/dev/disk:ro
-    - /sys/fs/cgroup:/cgroup:ro
+    - /sys/fs/cgroup:/sys/fs/cgroup:ro
     command:
     - --housekeeping_interval=15s
     - --docker_only=true
@@ -91,12 +91,6 @@ services:
     environment:
     - TZ=Europe/London
     - FTLCONF_webserver_api_password=bobmarley
-    - FTLCONF_dns_hosts=192.168.0.38 prometheus.home;192.168.0.38 grafana.home;192.168.0.38 loki.home;192.168.0.38
-      npm.home;192.168.0.38 pihole.home;192.168.0.38 home.home;192.168.0.38 portainer.home;192.168.0.38
-      containers.home;192.168.0.38 homeassistant.home;192.168.0.38 data.home;192.168.0.38
-      grafana.home.net;192.168.0.38 loki.home.net;192.168.0.38 npm.home.net;192.168.0.38
-      pihole.home.net;192.168.0.38 home.net;192.168.0.38 portainer.home.net;192.168.0.38
-      containers.home.net;192.168.0.38 homeassistant.home.net;192.168.0.38 data.home.net;
     image: pihole/pihole:latest
     ports:
     - 53:53/tcp

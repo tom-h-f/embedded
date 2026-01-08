@@ -12,6 +12,7 @@ This is an embedded systems workspace containing multiple independent projects f
 - **mini-weather-1**: Raspberry Pi Pico with DHT11 temp/humidity sensor and soil moisture sensor (MicroPython)
 - **pi0/iot-stack**: Homelab infrastructure stack running on Raspberry Pi server (Docker Compose)
 - **pi1-cam**: Camera monitoring and YOLO object detection system running on Raspberry Pi (Python)
+- **tf1**: Cloud server monitoring stack (Docker Compose)
 - **esp/esp-idf/v5.5.2**: ESP-IDF framework installation
 - **docs**: Reference manuals and hardware schematics
 
@@ -95,6 +96,7 @@ docker compose restart [service_name]
 
 ### Services
 
+- **Homepage**: Service dashboard (port 3001)
 - **Portainer**: Container management (port 9000)
 - **Nginx Proxy Manager**: Reverse proxy (ports 80, 81, 443)
 - **Pi-hole**: DNS and ad blocking (port 53, 8080)
@@ -105,7 +107,7 @@ docker compose restart [service_name]
 - **cAdvisor**: Container metrics
 - **Node Exporter**: System metrics (port 9100)
 
-All services have local DNS entries via Pi-hole (*.home and *.home.net domains).
+All services have local DNS entries via Pi-hole (*.lan domains).
 
 ### Monitoring and Observability Architecture
 
@@ -121,6 +123,8 @@ All machines are connected via **Tailscale VPN** under the tailnet: `meerkat-dec
   - Local network: 192.168.0.38
 - **pi1** (camera server):
   - Tailscale: 100.99.168.84
+- **tf1** (cloud server):
+  - Tailscale: 100.93.107.4
 - **Tailscale MagicDNS**: 100.100.100.100 (resolves *.ts.net domains)
 
 #### DNS Architecture
@@ -133,10 +137,12 @@ server=/ts.net/100.100.100.100    # Forward .ts.net queries to Tailscale MagicDN
 
 # SRV records for Prometheus service discovery
 srv-host=_metrics._tcp.meerkat-decibel.ts.net,pi1.meerkat-decibel.ts.net,9100,0,10
+srv-host=_metrics._tcp.meerkat-decibel.ts.net,tf1.meerkat-decibel.ts.net,9100,0,10
 
 # Static A records for Tailscale hosts
 host-record=pi0.meerkat-decibel.ts.net,100.70.68.91
 host-record=pi1.meerkat-decibel.ts.net,100.99.168.84
+host-record=tf1.meerkat-decibel.ts.net,100.93.107.4
 ```
 
 **Pi-hole Upstream DNS** (`/opt/iot-stack/pihole/etc/pihole.toml`):
@@ -149,7 +155,7 @@ host-record=pi1.meerkat-decibel.ts.net,100.99.168.84
 1. Client queries Pi-hole (100.70.68.91 or 192.168.0.38)
 2. For `*.ts.net` domains: Pi-hole serves static A records OR forwards to Tailscale MagicDNS
 3. For SRV records: Pi-hole returns service discovery information (e.g., `_metrics._tcp`)
-4. For local domains: Pi-hole resolves `.home` and `.home.net` via static entries
+4. For local domains: Pi-hole resolves `.lan` via static entries
 5. For other domains: Pi-hole blocks ads, then forwards to upstream DNS
 
 #### Nginx Proxy Manager
@@ -162,25 +168,27 @@ Nginx Proxy Manager provides clean domain-based access to all services running o
 
 | Domain | Target Server | Port | Protocol | Service |
 |--------|---------------|------|----------|---------|
-| grafana.home | 192.168.0.38 | 3000 | HTTP | Grafana Dashboard |
-| prometheus.home | 100.70.68.91 | 9090 | HTTP | Prometheus |
-| pihole.home | 192.168.0.38 | 8080 | HTTP | Pi-hole Web UI |
-| loki.home | 192.168.0.38 | 3100 | HTTP | Loki API |
-| containers.home | 192.168.0.38 | 9000 | HTTP | Portainer |
-| npm.home | 192.168.0.38 | 81 | HTTP | NPM Admin Panel |
-| data.home | 192.168.0.38 | 3000 | HTTP | Grafana (alias) |
-| data.home.net | 192.168.0.38 | 3000 | HTTPS | Grafana (HTTPS) |
+| home.lan | 100.70.68.91 | 3001 | HTTP | Homepage Dashboard |
+| homeassistant.lan | 192.168.0.38 | 8123 | HTTP | Home Assistant |
+| grafana.lan | 192.168.0.38 | 3000 | HTTP | Grafana Dashboard |
+| prometheus.lan | 100.70.68.91 | 9090 | HTTP | Prometheus |
+| pihole.lan | 192.168.0.38 | 8080 | HTTP | Pi-hole Web UI |
+| loki.lan | 192.168.0.38 | 3100 | HTTP | Loki API |
+| containers.lan | 192.168.0.38 | 9000 | HTTP | Portainer |
+| npm.lan | 192.168.0.38 | 81 | HTTP | NPM Admin Panel |
+| data.lan | 192.168.0.38 | 3000 | HTTP | Grafana (alias) |
+| data.lan | 192.168.0.38 | 3000 | HTTPS | Grafana (HTTPS) |
 
 **How It Works**:
 - Nginx listens on ports 80 (HTTP), 443 (HTTPS), and 81 (admin panel)
-- When you access `http://grafana.home`, Nginx proxies to `192.168.0.38:3000`
-- Both `.home` and `.home.net` TLDs are supported
+- When you access `http://grafana.lan`, Nginx proxies to `192.168.0.38:3000`
+- The `.lan` TLD is used for all local services
 - Pi-hole DNS resolves these domains to the Nginx Proxy Manager IP
 
 #### Monitoring Data Flow
 
 ```
-Host Systems (pi0, pi1)
+Host Systems (pi0, pi1, tf1)
     ↓ (expose metrics on port 9100)
 node-exporter ──────────────┐
                             │
@@ -216,7 +224,7 @@ Log Files ──→ Promtail ──→ Loki:3100
 
 3. **DNS Service Discovery** (`tailscale-nodes` job):
    - Queries SRV record: `_metrics._tcp.meerkat-decibel.ts.net`
-   - Discovers remote machines: pi1 node-exporter:9100
+   - Discovers remote machines: pi1 node-exporter:9100, tf1 node-exporter:9100
    - Refresh interval: 30 seconds
 
 **Prometheus DNS Configuration**:
@@ -280,22 +288,32 @@ dns:
 When Prometheus starts, it discovers remote metrics exporters via DNS-SD:
 
 1. Prometheus queries DNS for SRV record: `_metrics._tcp.meerkat-decibel.ts.net`
-2. Pi-hole returns: `0 10 9100 pi1.meerkat-decibel.ts.net.`
-3. Prometheus resolves `pi1.meerkat-decibel.ts.net` to `100.99.168.84` via Pi-hole
-4. Prometheus begins scraping `http://100.99.168.84:9100/metrics` every 15 seconds
-5. Metrics appear in Grafana with label `instance="pi1.meerkat-decibel.ts.net:9100"`
+2. Pi-hole returns multiple SRV records:
+   - `0 10 9100 pi1.meerkat-decibel.ts.net.`
+   - `0 10 9100 tf1.meerkat-decibel.ts.net.`
+3. Prometheus resolves hostnames via Pi-hole:
+   - `pi1.meerkat-decibel.ts.net` to `100.99.168.84`
+   - `tf1.meerkat-decibel.ts.net` to `100.93.107.4`
+4. Prometheus begins scraping both endpoints every 15 seconds
+5. Metrics appear in Grafana with labels:
+   - `instance="pi1.meerkat-decibel.ts.net:9100"`
+   - `instance="tf1.meerkat-decibel.ts.net:9100"`
 
 #### Service Access URLs
 
 **Via Nginx Proxy Manager** (clean domain names):
-- **Grafana**: http://grafana.home → 192.168.0.38:3000
-- **Prometheus**: http://prometheus.home → 100.70.68.91:9090
-- **Pi-hole**: http://pihole.home → 192.168.0.38:8080
-- **Loki**: http://loki.home → 192.168.0.38:3100
-- **Portainer**: http://containers.home → 192.168.0.38:9000
-- **NPM Admin**: http://npm.home:81 → 192.168.0.38:81
+- **Homepage**: http://home.lan → 100.70.68.91:3001
+- **Home Assistant**: http://homeassistant.lan → 192.168.0.38:8123
+- **Grafana**: http://grafana.lan → 192.168.0.38:3000
+- **Prometheus**: http://prometheus.lan → 100.70.68.91:9090
+- **Pi-hole**: http://pihole.lan → 192.168.0.38:8080
+- **Loki**: http://loki.lan → 192.168.0.38:3100
+- **Portainer**: http://containers.lan → 192.168.0.38:9000
+- **NPM Admin**: http://npm.lan:81 → 192.168.0.38:81
 
 **Direct Access** (via IP:port):
+- **Homepage**: http://192.168.0.38:3001
+- **Home Assistant**: http://192.168.0.38:8123
 - **Grafana**: http://192.168.0.38:3000
 - **Prometheus**: http://192.168.0.38:9090
 - **Pi-hole**: http://192.168.0.38:8080
@@ -338,6 +356,25 @@ Required environment variables:
 
 The system sends detection events to Loki for visualization in Grafana.
 
+## Cloud Server (tf1)
+
+Monitoring stack for the Hetzner cloud server. Runs node-exporter to expose system metrics.
+
+```sh
+cd tf1
+
+# Start node-exporter
+docker compose up -d
+
+# View logs
+docker compose logs -f node-exporter
+
+# Stop services
+docker compose down
+```
+
+The node-exporter is automatically discovered by Prometheus via DNS-SD (SRV records) and scraped every 15 seconds. Metrics are visible in Grafana under the instance label `tf1.meerkat-decibel.ts.net:9100`.
+
 ## Architecture Notes
 
 ### ESP32 Memory Management
@@ -347,7 +384,7 @@ The bvr project uses heap_caps_malloc with MALLOC_CAP_DMA for LCD framebuffers t
 ### Homelab Service Discovery
 
 The Pi-hole DNS server provides local name resolution. Services are accessible at:
-- `<service>.home` or `<service>.home.net` internally
+- `<service>.lan` for all services (e.g., grafana.lan, prometheus.lan)
 - External access is routed through Nginx Proxy Manager with SSL
 
 ### Object Detection Pipeline
@@ -370,6 +407,4 @@ The pi1-cam system:
 
 When you read this file's section; if there are any items listed, notify the user that we still need to complete them. Once they are completed remove them from the file.
 
-- The container memory usage metrics are all showing as 0B, which must be incorrect. Work out why, the grafana dashboard i am looking at is in ./iot-dashboard.json.
-- The DNS doesnt seem to actually work. On both this machine and `pi0` we just use records set in `/etc/hosts` rather than querying pi0. When i do run `dig grafana.home` i get nothing. When i run `dig @pi0 grafana.home` I get the record correctly so the linkup just does not seem to work.
-- The WebRTC on the `mediamtx` service running on `pi1` does not work over any network connection. It works fine locally, if i access it at localhost:8889/picam0; but anything other network fails with `closed: deadline exceeded while waiting connection`. This fails when accessing it via IP or via DNS. I am not sure as to why.
+No outstanding TODOs.
